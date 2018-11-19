@@ -12,6 +12,7 @@ namespace DNSClientApp
     class Program
     {
         const string DEFUALT_DNS = "8.8.8.8";
+        const int ANSWER_RR_INDEX = 6;
 
         public static void Main(string[] args)
         {
@@ -19,7 +20,7 @@ namespace DNSClientApp
             {
                 var host = args[0];
                 var p1 = new Program(); 
-                p1.getData(host, p1.prepareQuery("www.snapchat.com"));
+                p1.getData(host, p1.prepareQuery("www.snapchat.com", "A"));
                 Console.ReadKey();
             }
             else
@@ -28,7 +29,7 @@ namespace DNSClientApp
             }
         }
 
-        public byte[] prepareQuery(string requestText)
+        public byte[] prepareQuery(string requestText, string typeString)
         {
             byte[] header = { 0xAA, 0xAA, // Transaction ID
                     0x01, 0x20, // Query Params
@@ -36,9 +37,21 @@ namespace DNSClientApp
                     0x00, 0x00, // Number of Answers
                     0x00, 0x00, // Number of Authority Records
                     0x00, 0x00 }; // Number of Additional Records
-            byte[] type = {  0x00, 0x01 };
-            byte[] dnsClass = { 0x00, 0x01 };
 
+            byte[] type = new byte[2];
+            // determine type
+            if(typeString == "AAAA")
+            {
+                type[0] = 0x00;
+                type[1] = 0x1c;
+            }
+            else // anything else we'll send as the defualt
+            {
+                type[0] = 0x00;
+                type[1] = 0x01;
+            }
+
+            byte[] dnsClass = { 0x00, 0x01 };
             var queryList = new List<byte>();
 
             byte[] text_bytes = Encoding.ASCII.GetBytes(requestText);
@@ -99,6 +112,19 @@ namespace DNSClientApp
                 var resultString = Encoding.ASCII.GetString(result.Buffer);
                 System.Console.WriteLine(resultString);
 
+                // THIS IS WHERE THE FUN BEGINS
+                // find out how many responses there are
+                var resultList = result.Buffer.ToList();
+                int responseNum = (resultList[ANSWER_RR_INDEX] << 8) | resultList[ANSWER_RR_INDEX + 1];
+
+                // begin to loop through responses
+                for(int i = 0; i < responseNum; i++)
+                {
+
+                }
+                var answerStartIndex = query.Count();
+
+                var val = resultList[answerStartIndex];
             }
             catch (Exception e)
             {
