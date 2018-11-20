@@ -16,13 +16,25 @@ namespace DNSClientApp
         const byte REFERENCE_BYTE = 0xc0;
         const byte PERIOD_BYTE = 0x2e;
 
+        // offsets for parsing results and headers
+        // all offsets are with respect to the start of the particular answer
+        const int TYPE_OFFSET = 2;
+        const int CLASS_OFFSET = 4;
+        const int TTL_OFFSET = 6;
+        const int DATA_LENGTH_OFFSET = 10;
+        const int DATA_OFFSET = 12;
+
+        // DNS Answers
+        List<DNSAnswer> answers;
+
         public static void Main(string[] args)
         {
+            
             if (args.Length == 1)
             {
                 var host = args[0];
                 var p1 = new Program();
-                p1.getData(host, p1.prepareQuery("www.snapchat.com", "AAAA"));
+                p1.getData(host, p1.prepareQuery("www.bing.com", "A"));
                 Console.ReadKey();
             }
             else
@@ -98,25 +110,11 @@ namespace DNSClientApp
             return queryList.ToArray();
         }
 
-        public static List<byte> parsePointer(List<byte> operateList, List<byte> initList,int index, int count)
-        {
-            operateList.AddRange(initList.GetRange(index + 1, count));
-
-            if (initList[index + count + 1] == 0x00)
-            {
-                return operateList;
-            }
-            else // also signifies a period should be added
-            {
-                operateList.Add(PERIOD_BYTE);
-                return parsePointer(operateList, initList, index + count + 1, initList[index + count + 1]);
-            }
-        }
-
         public async void getData(string host, byte[] query)
         {
             try
             {
+                answers = new List<DNSAnswer>();
                 var client = new UdpClient();
 
                 IPAddress serverAddr = IPAddress.Parse(DEFUALT_DNS);
@@ -136,56 +134,25 @@ namespace DNSClientApp
                 int responseNum = (resultList[ANSWER_RR_INDEX] << 8) | resultList[ANSWER_RR_INDEX + 1];
                 var answerStartIndex = query.Count();
 
+                // arrays to keep track of data as we parse it
+                string[] names = new string[responseNum];
+                string[] types = new string[responseNum];
+                int[] ttls = new int[responseNum];
+                int[] lengths = new int[responseNum];
+                string[] dataSections = new string[responseNum];
+
                 // index to keep track of where we are in the stream
                 int index = answerStartIndex;
 
                 // create lists to store full parsed answers
-                List<byte>[] parsedResponses = new List<byte>[responseNum];
                 for (int i = 0; i < responseNum; i++)
                 {
-                    parsedResponses[i] = new List<byte>();
+                    answers.Add(new DNSAnswer());
                 }
 
-                // bool to kick us out of the loop when one of our responses has ended
-                bool responseParsed = false;
-
-                // begin to loop through answer section responses
-                for (int i = 0; i < responseNum; i++)
+                foreach(DNSAnswer answer in answers)
                 {
-                    responseParsed = false;
-                    while (!responseParsed)
-                    {
-                        // check if data is a pointer
-                        if (resultList[index] == REFERENCE_BYTE)
-                        {
-                            // our next byte is the offset into the stream
-                            // first byte into the offset will be the count
-                            // create a sub for loop to parse string pointed at
-                            int pointerIndex = (int)resultList[index + 1];
-
-                            // read in string from pointed at bit
-                            int pointerStringLength = (int)resultList[pointerIndex];
-
-                            // add in this range to our parsed responses
-                            //for(int j = pointerIndex; i < pointerStringLength; i+=)
-                            //parsedResponses[i].AddRange(resultList.GetRange(pointerIndex, pointerStringLength));
-                            parsedResponses[i] = parsePointer(parsedResponses[i], resultList, pointerIndex, pointerStringLength);
-                        }
-
-                        // reached the beginning of the length section for actual data
-                        if (index == answerStartIndex + 10)
-                        {
-                            // this byte and the next will be the length of the data section
-                            int dataStringLength = (resultList[index] << 8 | resultList[index + 1]);
-
-                            parsedResponses[i].AddRange(resultList.GetRange(index + 2, dataStringLength));
-
-                            // we've read this data and added it to the appropriate array
-                            // mark this data as parsed
-                            responseParsed = true;
-                        }
-                        index++;
-                    }
+                    index = answer.parseBytes(resultList, index);
                 }
             }
             catch (Exception e)
