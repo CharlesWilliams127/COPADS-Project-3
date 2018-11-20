@@ -185,7 +185,7 @@ namespace DNSClientApp
                     data += ".";
                 }
 
-                data.Remove(data.LastIndexOf('.'));
+                data = data.Remove(data.LastIndexOf('.'));
             }
 
             //parsedData.AddRange(resultList.GetRange(index + DATA_OFFSET, dataLength));

@@ -34,7 +34,7 @@ namespace DNSClientApp
             {
                 var host = args[0];
                 var p1 = new Program();
-                p1.getData(host, p1.prepareQuery("www.bing.com", "A"));
+                p1.getData(host, p1.prepareQuery("snapchat.com", "A"));
                 Console.ReadKey();
             }
             else
@@ -125,8 +125,6 @@ namespace DNSClientApp
                 await client.SendAsync(send_buffer, send_buffer.Length, endPoint);
 
                 var result = await client.ReceiveAsync();
-                var resultString = Encoding.ASCII.GetString(result.Buffer);
-                System.Console.WriteLine(resultString);
 
                 // THIS IS WHERE THE FUN BEGINS
                 // find out how many responses there are
@@ -153,7 +151,10 @@ namespace DNSClientApp
                 foreach(DNSAnswer answer in answers)
                 {
                     index = answer.parseBytes(resultList, index);
+                    Console.WriteLine(answer.name + " " + answer.classType + " " + answer.type + " " + answer.data);
                 }
+
+                // finally print everything
             }
             catch (Exception e)
             {
