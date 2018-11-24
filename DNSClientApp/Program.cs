@@ -29,28 +29,39 @@ namespace DNSClientApp
 
         public static void Main(string[] args)
         {
-            //switch(args.Length)
+            var p1 = new Program();
+            switch (args.Length)
+            {
+                case 1: // just the domain
+                    var host = args[0];
+                    p1.getData(p1.prepareQuery(host, "A"), DEFUALT_DNS);
+                    break;
+                case 2: // type and domain
+                    var dnsType = args[0];
+                    var host2 = args[1];
+                    p1.getData(p1.prepareQuery(host2, dnsType), DEFUALT_DNS);
+                    break;
+                case 3: // server, type, and domain
+                    var server = args[0];
+                    var dnsType2 = args[1];
+                    var host3 = args[2];
+                    p1.getData(p1.prepareQuery(host3, dnsType2), server);
+                    break;
+                default:
+                    Console.WriteLine("Improper Command Line Args");
+                    break;
+            }
+            Console.ReadKey();
+            //if (args.Length == 1)
             //{
-            //    case 1:
-            //        break;
-            //    case 2:
-            //        break;
-            //    case 3:
-            //        break;
-            //    default:
-            //        break;
+            //    var host = args[0];
+            //    p1.getData(p1.prepareQuery("www.rit.edu", "AAAA"), DEFUALT_DNS);
+            //    Console.ReadKey();
             //}
-            if (args.Length == 1)
-            {
-                var host = args[0];
-                var p1 = new Program();
-                p1.getData(host, p1.prepareQuery("www.rit.edu", "AAAA"));
-                Console.ReadKey();
-            }
-            else
-            {
-                System.Console.WriteLine("Usage: dotnet run <host>");
-            }
+            //else
+            //{
+            //    System.Console.WriteLine("Usage: dotnet run <host>");
+            //}
         }
 
         public byte[] prepareQuery(string requestText, string typeString)
@@ -118,14 +129,14 @@ namespace DNSClientApp
             return queryList.ToArray();
         }
 
-        public async void getData(string host, byte[] query)
+        public async void getData(byte[] query, string server)
         {
             try
             {
                 answers = new List<DNSAnswer>();
                 var client = new UdpClient();
 
-                IPAddress serverAddr = IPAddress.Parse(DEFUALT_DNS);
+                IPAddress serverAddr = IPAddress.Parse(server);
                 IPEndPoint endPoint = new IPEndPoint(serverAddr, 53);
 
                 // need to append type and class
