@@ -6,12 +6,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Linq;
+using System.Net.NetworkInformation;
 
 namespace DNSClientApp
 {
     class Program
     {
-        const string DEFUALT_DNS = "8.8.8.8";
+        static string DEFUALT_DNS;
         const int ANSWER_RR_INDEX = 6;
         const byte REFERENCE_BYTE = 0xc0;
         const byte PERIOD_BYTE = 0x2e;
@@ -29,6 +30,9 @@ namespace DNSClientApp
 
         public static void Main(string[] args)
         {
+            // find default DNS
+            DEFUALT_DNS = GetDnsAdress().ToString();
+
             var p1 = new Program();
             switch (args.Length)
             {
@@ -62,6 +66,27 @@ namespace DNSClientApp
             //{
             //    System.Console.WriteLine("Usage: dotnet run <host>");
             //}
+        }
+
+        private static IPAddress GetDnsAdress()
+        {
+            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (NetworkInterface networkInterface in networkInterfaces)
+            {
+                if (networkInterface.OperationalStatus == OperationalStatus.Up)
+                {
+                    IPInterfaceProperties ipProperties = networkInterface.GetIPProperties();
+                    IPAddressCollection dnsAddresses = ipProperties.DnsAddresses;
+
+                    foreach (IPAddress dnsAdress in dnsAddresses)
+                    {
+                        return dnsAdress;
+                    }
+                }
+            }
+
+            throw new InvalidOperationException("Unable to find DNS Address");
         }
 
         public byte[] prepareQuery(string requestText, string typeString)
