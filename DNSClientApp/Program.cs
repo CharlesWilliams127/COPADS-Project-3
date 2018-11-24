@@ -32,29 +32,39 @@ namespace DNSClientApp
         {
             // find default DNS
             DEFUALT_DNS = GetDnsAdress().ToString();
+            string server = GetDnsAdress().ToString();
+            string dnsType = "";
+            string host = "";
 
             var p1 = new Program();
             switch (args.Length)
             {
                 case 1: // just the domain
-                    var host = args[0];
+                    host = args[0];
                     p1.getData(p1.prepareQuery(host, "A"), DEFUALT_DNS);
                     break;
                 case 2: // type and domain
-                    var dnsType = args[0];
-                    var host2 = args[1];
-                    p1.getData(p1.prepareQuery(host2, dnsType), DEFUALT_DNS);
+                    dnsType = args[0];
+                    host = args[1];
+                    p1.getData(p1.prepareQuery(host, dnsType), DEFUALT_DNS);
                     break;
                 case 3: // server, type, and domain
-                    var server = args[0];
-                    var dnsType2 = args[1];
-                    var host3 = args[2];
-                    p1.getData(p1.prepareQuery(host3, dnsType2), server);
+                    server = args[0];
+                    dnsType = args[1];
+                    host = args[2];
+                    p1.getData(p1.prepareQuery(host, dnsType), server);
                     break;
                 default:
                     Console.WriteLine("Improper Command Line Args");
                     break;
             }
+
+            if (!String.IsNullOrEmpty(dnsType) || !String.IsNullOrEmpty(server) || !String.IsNullOrEmpty(host))
+            {
+                Console.WriteLine(";; SERVER: " + server);
+                Console.WriteLine(";; WHEN: " + DateTime.Now);
+            }
+            
             Console.ReadKey();
             //if (args.Length == 1)
             //{
@@ -192,6 +202,7 @@ namespace DNSClientApp
                     answers.Add(new DNSAnswer());
                 }
 
+                Console.WriteLine(";; ANSWER SECTION: ");
                 foreach(DNSAnswer answer in answers)
                 {
                     index = answer.parseBytes(resultList, index);
