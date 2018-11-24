@@ -11,7 +11,7 @@ namespace DNSClientApp
 {
     class Program
     {
-        const string DEFUALT_DNS = "129.21.3.17";
+        const string DEFUALT_DNS = "8.8.8.8";
         const int ANSWER_RR_INDEX = 6;
         const byte REFERENCE_BYTE = 0xc0;
         const byte PERIOD_BYTE = 0x2e;
@@ -29,12 +29,22 @@ namespace DNSClientApp
 
         public static void Main(string[] args)
         {
-            
+            //switch(args.Length)
+            //{
+            //    case 1:
+            //        break;
+            //    case 2:
+            //        break;
+            //    case 3:
+            //        break;
+            //    default:
+            //        break;
+            //}
             if (args.Length == 1)
             {
                 var host = args[0];
                 var p1 = new Program();
-                p1.getData(host, p1.prepareQuery("snapchat.com", "A"));
+                p1.getData(host, p1.prepareQuery("www.rit.edu", "AAAA"));
                 Console.ReadKey();
             }
             else
@@ -42,8 +52,6 @@ namespace DNSClientApp
                 System.Console.WriteLine("Usage: dotnet run <host>");
             }
         }
-
-
 
         public byte[] prepareQuery(string requestText, string typeString)
         {

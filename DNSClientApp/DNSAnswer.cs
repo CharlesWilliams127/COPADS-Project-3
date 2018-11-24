@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Collections.Generic;
 using System.Text;
 
@@ -186,6 +187,18 @@ namespace DNSClientApp
                 }
 
                 data = data.Remove(data.LastIndexOf('.'));
+            }
+            else if (type == "AAAA")
+            {
+                dataLength = (resultList[index + DATA_LENGTH_OFFSET] << 8 | resultList[index + DATA_LENGTH_OFFSET + 1]);
+                List<byte> byteAddresses = new List<byte>();
+                for (int i = index + DATA_OFFSET; i < index + DATA_OFFSET + dataLength; i++)
+                {
+                    byteAddresses.Add(resultList[i]);
+                }
+
+                IPAddress ipv6 = new IPAddress(byteAddresses.ToArray());
+                data = ipv6.ToString();
             }
 
             //parsedData.AddRange(resultList.GetRange(index + DATA_OFFSET, dataLength));
