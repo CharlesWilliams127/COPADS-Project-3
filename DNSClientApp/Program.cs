@@ -37,60 +37,64 @@ namespace DNSClientApp
             string host = "";
 
             var p1 = new Program();
-            switch (args.Length)
+            try
             {
-                case 1: // just the domain
-                    host = args[0];
-                    p1.getData(p1.prepareQuery(host, "A"), DEFUALT_DNS);
-                    break;
-                case 2: // type and domain
-                    dnsType = args[0];
-                    host = args[1];
-                    p1.getData(p1.prepareQuery(host, dnsType), DEFUALT_DNS);
-                    break;
-                case 3: // server, type, and domain
-                    server = args[0];
-                    dnsType = args[1];
-                    host = args[2];
-                    p1.getData(p1.prepareQuery(host, dnsType), server);
-                    break;
-                default:
-                    Console.WriteLine("Improper Command Line Args");
-                    break;
-            }
+                switch (args.Length)
+                {
+                    case 1: // just the domain
+                        host = args[0];
+                        p1.getData(p1.prepareQuery(host, "A"), DEFUALT_DNS);
+                        break;
+                    case 2: // type and domain
+                        dnsType = args[0];
+                        host = args[1];
+                        p1.getData(p1.prepareQuery(host, dnsType), DEFUALT_DNS);
+                        break;
+                    case 3: // server, type, and domain
+                        server = args[0];
+                        dnsType = args[1];
+                        host = args[2];
+                        p1.getData(p1.prepareQuery(host, dnsType), server);
+                        break;
+                    default:
+                        Console.WriteLine("Improper number of command line arguments.");
+                        Console.WriteLine("Usage: dotnet run <DNSServer> <Type> Hostname");
+                        break;
+                }
 
-            if (!String.IsNullOrEmpty(dnsType) || !String.IsNullOrEmpty(server) || !String.IsNullOrEmpty(host))
+                if (!String.IsNullOrEmpty(dnsType) || !String.IsNullOrEmpty(server) || !String.IsNullOrEmpty(host))
+                {
+                    Console.WriteLine(";; SERVER: " + server);
+                    Console.WriteLine(";; WHEN: " + DateTime.Now);
+                    Console.WriteLine();
+                }
+            }
+            catch (Exception)
             {
-                Console.WriteLine(";; SERVER: " + server);
-                Console.WriteLine(";; WHEN: " + DateTime.Now);
+                Console.WriteLine("Something went wrong. Please try again and ensure all command line arguments passed are valid.");
+                Console.WriteLine("Usage: dotnet run <DNSServer> <Type> Hostname");
             }
             
             Console.ReadKey();
-            //if (args.Length == 1)
-            //{
-            //    var host = args[0];
-            //    p1.getData(p1.prepareQuery("www.rit.edu", "AAAA"), DEFUALT_DNS);
-            //    Console.ReadKey();
-            //}
-            //else
-            //{
-            //    System.Console.WriteLine("Usage: dotnet run <host>");
-            //}
         }
 
         private static IPAddress GetDnsAdress()
         {
+            // get all network interfaces
             NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
 
             foreach (NetworkInterface networkInterface in networkInterfaces)
             {
+                // check if the interface is operational
                 if (networkInterface.OperationalStatus == OperationalStatus.Up)
                 {
+                    // get the properties to determine which network interface is a DNS Address
                     IPInterfaceProperties ipProperties = networkInterface.GetIPProperties();
                     IPAddressCollection dnsAddresses = ipProperties.DnsAddresses;
 
                     foreach (IPAddress dnsAdress in dnsAddresses)
                     {
+                        // just return a functional DNS Address
                         return dnsAdress;
                     }
                 }
@@ -168,6 +172,7 @@ namespace DNSClientApp
         {
             try
             {
+                // create classes dedicated to sending and parsing data
                 answers = new List<DNSAnswer>();
                 var client = new UdpClient();
 
@@ -202,21 +207,21 @@ namespace DNSClientApp
                     answers.Add(new DNSAnswer());
                 }
 
+                // parse the response and print the results to the console
+                Console.WriteLine();
                 Console.WriteLine(";; ANSWER SECTION: ");
-                foreach(DNSAnswer answer in answers)
+                foreach (DNSAnswer answer in answers)
                 {
                     index = answer.parseBytes(resultList, index);
                     Console.WriteLine(answer.name + " " + answer.classType + " " + answer.type + " " + answer.data);
                 }
-
-                // finally print everything
+                Console.WriteLine();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                System.Console.WriteLine(e);
-                System.Console.WriteLine("Unable to connect to the server");
+                Console.WriteLine("Something went wrong. Please try again and ensure all command line arguments passed are valid.");
+                Console.WriteLine("Usage: dotnet run <DNSServer> <Type> Hostname");
             }
-
         }
     }
 }

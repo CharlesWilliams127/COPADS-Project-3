@@ -36,25 +36,7 @@ namespace DNSClientApp
             parsedData = new List<byte>();
         }
 
-        private List<byte> parsePointerInternal(List<byte> operateList, List<byte> initList, int index, int count)
-        {
-            operateList.AddRange(initList.GetRange(index + 1, count));
-
-            if (initList[index + count + 1] == NULL_BYTE)
-            {
-                return operateList;
-            }
-            else if (initList[index + count + 1] == REFERENCE_BYTE)
-            {
-                return parsePointer(operateList, initList, index + count + 1);
-            }
-            else // also signifies a period should be added
-            {
-                operateList.Add(PERIOD_BYTE);
-                return parsePointerInternal(operateList, initList, index + count + 1, initList[index + count + 1]);
-            }
-        }
-
+        // used to parse a known pointer and retrieve the data stored in it
         private List<byte> parsePointer(List<byte> operateList, List<byte> initList, int index)
         {
             // our next byte is the offset into the stream
@@ -65,9 +47,10 @@ namespace DNSClientApp
             // read in string from pointed at bit
             int pointerStringLength = (int)initList[pointerIndex];
 
-            return parsePointerInternal(operateList, initList, pointerIndex, pointerStringLength);
+            return parseString(operateList, initList, pointerIndex, pointerStringLength);
         }
 
+        // used to parse a string from data or CNAME
         private List<byte> parseString(List<byte> operateList, List<byte> initList, int index, int count)
         {
             operateList.AddRange(initList.GetRange(index + 1, count));
@@ -87,6 +70,10 @@ namespace DNSClientApp
             }
         }
 
+        // used to parse a byte stream that results in a DNS answer
+        // values from the answer are stored in variables local to 
+        // this class. Returns the last index of this answer so other
+        // DNSAnswers know where to begin parsing
         public int parseBytes(List<byte> resultList, int index)
         {
 
@@ -100,35 +87,22 @@ namespace DNSClientApp
                 // create a sub for loop to parse string pointed at
                 parsedData = parsePointer(parsedData, resultList, index);
             }
-            //else // no pointer, just data, meaning this is a count
-            //{
-            //    int nameLength = (int)(resultList[index] << 8 | resultList[index + 1]);
 
-            //    // check to ensure the added data contained no pointers
-            //    if (resultList.GetRange(index + TYPE_OFFSET, nameLength).Contains(REFERENCE_BYTE))
-            //    {
-            //        parsedData = parsePointer(parsedData, resultList, resultList.GetRange(index + TYPE_OFFSET, nameLength).IndexOf(REFERENCE_BYTE));
-            //    }
-            //    else
-            //    {
-            //        parsedData.AddRange(resultList.GetRange(index + TYPE_OFFSET, nameLength));
-            //    }
-            //}
             // assign this value to the name
             name = Encoding.ASCII.GetString(parsedData.ToArray());
 
             // add NUL for later processing to show we're done with the name
             parsedData.Add(NULL_BYTE);
 
-            if (resultList[index + TYPE_OFFSET] == 0x00 && resultList[index + TYPE_OFFSET + 1] == 0x05)
+            if (resultList[index + TYPE_OFFSET] == NULL_BYTE && resultList[index + TYPE_OFFSET + 1] == 0x05)
             {
                 type = "CNAME";
             }
-            else if (resultList[index + TYPE_OFFSET] == 0x00 && resultList[index + TYPE_OFFSET + 1] == 0x01)
+            else if (resultList[index + TYPE_OFFSET] == NULL_BYTE && resultList[index + TYPE_OFFSET + 1] == 0x01)
             {
                 type = "A";
             }
-            else if (resultList[index + TYPE_OFFSET] == 0x00 && resultList[index + TYPE_OFFSET + 1] == 0x1c)
+            else if (resultList[index + TYPE_OFFSET] == NULL_BYTE && resultList[index + TYPE_OFFSET + 1] == 0x1c)
             {
                 type = "AAAA";
             }
@@ -138,7 +112,7 @@ namespace DNSClientApp
             }
 
             // class parsing 
-            if (resultList[index + CLASS_OFFSET] == 0x00 && resultList[index + CLASS_OFFSET + 1] == 0x01)
+            if (resultList[index + CLASS_OFFSET] == NULL_BYTE && resultList[index + CLASS_OFFSET + 1] == 0x01)
             {
                 classType = "IN";
             }
@@ -200,9 +174,6 @@ namespace DNSClientApp
                 IPAddress ipv6 = new IPAddress(byteAddresses.ToArray());
                 data = ipv6.ToString();
             }
-
-            //parsedData.AddRange(resultList.GetRange(index + DATA_OFFSET, dataLength));
-            
 
             // returns the index the next answer section should begin at
             return index + DATA_OFFSET + dataLength;
